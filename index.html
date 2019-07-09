@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>python -X importtime</title>
+    <script src="https://d3js.org/d3.v5.min.js"></script>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            background: #333;
+        }
+
+        #import-toolbar {
+            font-family: "Helvetica Neue", Helvetica, sans-serif;
+            font-size: 14px;
+            font-weight: 500;
+            height: 36px;
+            line-height: 36px;
+            background: #444;
+            color: #eee;
+            padding: 0 12px;
+        }
+
+        #import-title,
+        #import-paste,
+        #import-anonymize-label,
+        #import-download {
+            color: #32b1e7;
+            margin: 0 6px 0 0;
+            text-decoration: none;
+            background: #555;
+            border-radius: 3px;
+            display: inline-block;
+            line-height: 24px;
+            padding: 0 12px;
+            border: none;
+            font-weight: inherit;
+            font-size: inherit;
+            font-family: inherit;
+            box-shadow: inset 0 0 0 1px #5a5a5a, 0 0 0 1px #3e3e3e;
+            text-shadow: 0 1px #3e3e3e;
+        }
+
+        #import-anonymize-label,
+        #import-title {
+            color: #ddd;
+        }
+
+        #import-title {
+            font-family: monospace;
+        }
+
+        #import-anonymize-label {
+            padding-right: 0;
+        }
+
+        #import-anonymize {
+            border-top-right-radius: 3px;
+            border-bottom-right-radius: 3px;
+            font-weight: inherit;
+            font-size: inherit;
+            font-family: inherit;
+            margin: 0;
+            padding: 0 3px;
+            border: 0;
+            line-height: inherit;
+            background: transparent;
+            color: #fff;
+        }
+
+    </style>
+</head>
+<body>
+<div id="import-toolbar">
+    <h1 id="import-title">Python -X importtime</h1>
+    <button id="import-paste">Paste</button>
+    <a href="#" id="import-download" download="importtime.svg">Download</a>
+    <label id="import-anonymize-label">Anonymize: <input id="import-anonymize" value="corporate,secret_stuff"/></label>
+</div>
+<svg id="import-graph" width="3000" height="2000" xmlns="http://www.w3.org/2000/svg">
+    <defs></defs>
+    <g></g>
+</svg>
+<script>
+    (function () {
+        var state = {text: '', anonymized_patterns: ['corporate', 'secret_stuff'], blob: null};
+
+        update();
+
+        document.getElementById('import-paste').addEventListener('click', function () {
+            navigator.clipboard.readText()
+                .then(function (text) {
+                    state.text = text;
+                    update();
+                });
+        });
+
+        document.getElementById('import-anonymize').addEventListener('change', function (e) {
+            state.anonymized_patterns = e.target.value.split(',');
+            update();
+        });
+
+        function update() {
+            console.log(state);
+            var nextId = 0;
+            var rootNode = {
+                name: 'Total',
+                id: (nextId++).toString(36),
+                value: 0,
+                depth: 0,
+                children: [],
+                parent: null
+            };
+            state.text.split('\n').map(function (line) {
+                return line.match(/import time: +(\d+) \| +(\d+) \|( +)([^\n]+)/);
+            }).filter(function (match) {
+                return match !== null;
+            }).map(function (match) {
+                return {
+                    id: (nextId++).toString(36),
+                    name: match[4],
+                    value: parseInt(match[2]),
+                    depth: (match[3].length + 1) / 2,
+                    parent: null,
+                    children: [{name: 'self', id: (nextId++).toString(36), value: parseInt(match[1])}]
+                };
+            }).reverse().reduce(function (currentNode, node) {
+                while (node.depth <= currentNode.depth)
+                    currentNode = currentNode.parent;
+                node.parent = currentNode;
+                currentNode.children.push(node);
+                return node;
+            }, rootNode);
+            rootNode.value = rootNode.children.reduce(function (accum, child) {
+                return accum + child.value;
+            }, 0);
+            var layout = d3.treemap().size([3000, 2000]).padding(2).paddingTop(20).round(true);
+            var d3RootNode = d3.hierarchy(rootNode); // maybe not needed
+            layout(d3RootNode);
+            var clipPaths = d3.select('#import-graph defs')
+                .selectAll('clipPath')
+                .data(d3RootNode.descendants(), function (d) {
+                    return d.data.id
+                });
+            clipPaths.exit().remove();
+            var newClipPaths = clipPaths.enter().append('clipPath');
+            newClipPaths
+                .attr('id', function (d) {
+                    return 'c' + d.data.id;
+                })
+                .append('rect');
+            clipPaths = clipPaths.merge(newClipPaths);
+            clipPaths
+                .select('rect')
+                .attr('width', function (d) {
+                    return d.x1 - d.x0;
+                })
+                .attr('height', function (d) {
+                    return d.y1 - d.y0;
+                });
+            var nodes = d3.select('#import-graph g')
+                .attr('font-family', 'sans-serif')
+                .attr('fill', '#fff')
+                .attr('font-size', '10px')
+                .selectAll('g')
+                .data(d3RootNode.descendants(), function (d) {
+                    return d.data.id
+                });
+            nodes.exit().remove();
+            var newNodes = nodes.enter().append('g');
+            newNodes.append('rect');
+            newNodes
+                .append('text').attr('dx', 4).attr('dy', 14)
+                .attr('clip-path', function (d) {
+                    return 'url(#c' + d.data.id + ')';
+                });
+            newNodes.append('title');
+            nodes = nodes.merge(newNodes);
+            nodes.attr('transform', function (d) {
+                return 'translate(' + d.x0 + ',' + d.y0 + ')'
+            });
+            nodes
+                .select('rect')
+                .attr('stroke', function (d) {
+                    return d.data.name === 'self' ? null : '#fff';
+                })
+                .attr('fill', function (d) {
+                    if (d.data.name === 'self')
+                        return 'rgba(0, 0, 0, 0.1)';
+                    var firstName = d.data.name.split('.')[0];
+                    var hash = 0;
+                    for (var i = 0; i < firstName.length; ++i)
+                        hash = ((hash << 5) - hash + firstName.charCodeAt(i)) << 0;
+                    return d3.hsl((hash + 210) % 360, 0.4, 0.5).hex().toString();
+                })
+                .attr('width', function (d) {
+                    return d.x1 - d.x0;
+                })
+                .attr('height', function (d) {
+                    return d.y1 - d.y0;
+                });
+            nodes.select('text').text(getNodeText);
+            nodes.select('title').text(getNodeText);
+
+            if (state.blobUrl != null)
+                URL.revokeObjectURL(state.blobUrl);
+            var contentBlob = new Blob([document.getElementById('import-graph').outerHTML], {type: 'image/svg+xml'});
+            state.blobUrl = URL.createObjectURL(contentBlob);
+            d3.select('#import-download').attr('href', state.blobUrl);
+        }
+
+        function isAnonymized(module) {
+            for (var i = 0; i < state.anonymized_patterns.length; ++i)
+                if (module.indexOf(state.anonymized_patterns[i]) !== -1)
+                    return true;
+            return false;
+        }
+
+        function getNodeText(d) {
+            var name = isAnonymized(d.data.name) ? '???' : d.data.name;
+            return name + ': ' + (d.data.value / 1000) + ' ms';
+        }
+    })();
+</script>
+</body>
+</html>
