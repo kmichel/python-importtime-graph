@@ -185,13 +185,13 @@
                     return d.data.name === 'self' ? null : '#fff';
                 })
                 .attr('fill', function (d) {
-                    if (d.data.name === 'self')
-                        return 'rgba(0, 0, 0, 0.1)';
-                    var firstName = d.data.name.split('.')[0];
+                    var isSelf = d.data.name === 'self';
+                    var fullName = isSelf ? d.parent.data.name : d.data.name;
+                    var firstName = fullName.split('.')[0];
                     var hash = 0;
                     for (var i = 0; i < firstName.length; ++i)
                         hash = ((hash << 5) - hash + firstName.charCodeAt(i)) << 0;
-                    return d3.hsl((hash + 210) % 360, 0.4, 0.5).hex().toString();
+                    return d3.hsl((hash + 210) % 360, isSelf ? 0.35 : 0.45, isSelf ? 0.45 : 0.5).hex().toString();
                 })
                 .attr('width', function (d) {
                     return d.x1 - d.x0;
