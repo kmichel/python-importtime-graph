@@ -189,18 +189,15 @@
             layout(d3RootNode);
             var clipPaths = d3.select('#import-graph defs')
                 .selectAll('clipPath')
-                .data(d3RootNode.descendants(), function (d) {
-                    return d.data.id
-                });
+                .data(d3RootNode.descendants());
             clipPaths.exit().remove();
             var newClipPaths = clipPaths.enter().append('clipPath');
-            newClipPaths
+            newClipPaths.append('rect');
+            clipPaths = clipPaths.merge(newClipPaths);
+            clipPaths
                 .attr('id', function (d) {
                     return 'c' + d.data.id;
                 })
-                .append('rect');
-            clipPaths = clipPaths.merge(newClipPaths);
-            clipPaths
                 .select('rect')
                 .attr('width', function (d) {
                     return d.x1 - d.x0;
@@ -214,17 +211,11 @@
                 .attr('font-size', '10px')
                 .attr('transform', 'translate(0.5, 0.5)')
                 .selectAll('g')
-                .data(d3RootNode.descendants(), function (d) {
-                    return d.data.id
-                });
+                .data(d3RootNode.descendants());
             nodes.exit().remove();
             var newNodes = nodes.enter().append('g');
             newNodes.append('rect');
-            newNodes
-                .append('text').attr('dx', 4).attr('dy', 14)
-                .attr('clip-path', function (d) {
-                    return 'url(#c' + d.data.id + ')';
-                });
+            newNodes.append('text').attr('dx', 4).attr('dy', 14);
             newNodes.append('title');
             nodes = nodes.merge(newNodes);
             nodes.attr('transform', function (d) {
@@ -250,7 +241,12 @@
                 .attr('height', function (d) {
                     return d.y1 - d.y0;
                 });
-            nodes.select('text').text(getNodeText);
+            nodes
+                .select('text')
+                .attr('clip-path', function (d) {
+                    return 'url(#c' + d.data.id + ')';
+                })
+                .text(getNodeText);
             nodes.select('title').text(getNodeText);
 
             var svgLink = document.getElementById('import-download-svg');
