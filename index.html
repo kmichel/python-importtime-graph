@@ -4,6 +4,7 @@
     <title>python -X importtime</title>
     <meta charset="UTF-8">
     <script src="https://d3js.org/d3.v5.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/canvg/dist/browser/canvg.min.js"></script>
     <style>
         body {
             margin: 0;
@@ -25,9 +26,10 @@
         #import-title,
         #import-open-label,
         #import-paste,
-        #import-download,
+        #import-download-svg,
+        #import-download-png,
         #import-anonymize-label {
-            color: #32b1e7;
+            color: #ddd;
             margin: 0 6px 0 0;
             text-decoration: none;
             background: #555;
@@ -41,14 +43,21 @@
             font-family: inherit;
             box-shadow: inset 0 0 0 1px #5a5a5a, 0 0 0 1px #3e3e3e;
             text-shadow: 0 1px #3e3e3e;
-            cursor: pointer;
             min-width: 84px;
             text-align: center;
             box-sizing: border-box;
         }
 
-        #import-open-label:focus {
-            color: red;
+        #import-open-label,
+        #import-paste,
+        #import-download-svg[href],
+        #import-download-png[href] {
+            color: #32b1e7;
+            cursor: pointer;
+        }
+
+        #import-title {
+            font-family: monospace;
         }
 
         #import-open {
@@ -62,7 +71,8 @@
         #import-open:focus + label,
         #import-paste:focus,
         #import-anonymize:focus,
-        #import-download:focus {
+        #import-download-svg:focus,
+        #import-download-png:focus {
             outline: none;
             box-shadow: inset 0 0 6px rgba(50, 177, 231, 0.4), 0 0 6px 1px rgba(50, 177, 231, 0.2), inset 0 0 0 1px #5a5a5a, 0 0 0 1px #3e3e3e;
         }
@@ -70,16 +80,6 @@
         #import-open:focus-within + label {
             outline: none;
             box-shadow: inset 0 0 6px rgba(50, 177, 231, 0.4), 0 0 6px 1px rgba(50, 177, 231, 0.2), inset 0 0 0 1px #5a5a5a, 0 0 0 1px #3e3e3e;
-        }
-
-        #import-anonymize-label,
-        #import-title {
-            color: #ddd;
-        }
-
-        #import-title {
-            cursor: default;
-            font-family: monospace;
         }
 
         #import-anonymize-label {
@@ -100,6 +100,9 @@
             color: #fff;
         }
 
+        #import-canvas {
+            display: none;
+        }
     </style>
 </head>
 <body>
@@ -107,14 +110,17 @@
     <h1 id="import-title">Python -X importtime</h1>
     <input type="file" id="import-open"><label id="import-open-label" for="import-open">Open…</label>
     <button id="import-paste">Paste</button>
-    <a href="#" id="import-download" download="importtime.svg">Download SVG</a>
+    <a id="import-download-svg" download="importtime.svg">Download SVG</a>
+    <a id="import-download-png" download="importtime.png">Download PNG</a>
     <label id="import-anonymize-label">Anonymize:
-        <input id="import-anonymize" value="corporate,secret_stuff" autocorrect="off" autocapitalize="off" spellcheck="false"/></label>
+        <input id="import-anonymize" value="corporate,secret_stuff" autocorrect="off" autocapitalize="off"
+               spellcheck="false"/></label>
 </div>
 <svg id="import-graph" width="3000" height="2000" xmlns="http://www.w3.org/2000/svg">
     <defs></defs>
     <g></g>
 </svg>
+<canvas id="import-canvas" width="6000" height="4000"></canvas>
 <script>
     (function () {
         var state = {text: '', anonymized_patterns: ['corporate', 'secret_stuff'], blob: null};
@@ -178,7 +184,7 @@
             rootNode.value = rootNode.children.reduce(function (accum, child) {
                 return accum + child.value;
             }, 0);
-            var layout = d3.treemap().size([3000, 2000]).padding(2).paddingTop(20).round(true);
+            var layout = d3.treemap().size([3000 - 1, 2000 - 1]).padding(2).paddingTop(20).round(true);
             var d3RootNode = d3.hierarchy(rootNode); // maybe not needed
             layout(d3RootNode);
             var clipPaths = d3.select('#import-graph defs')
@@ -206,6 +212,7 @@
                 .attr('font-family', 'sans-serif')
                 .attr('fill', '#fff')
                 .attr('font-size', '10px')
+                .attr('transform', 'translate(0.5, 0.5)')
                 .selectAll('g')
                 .data(d3RootNode.descendants(), function (d) {
                     return d.data.id
@@ -246,11 +253,31 @@
             nodes.select('text').text(getNodeText);
             nodes.select('title').text(getNodeText);
 
-            if (state.blobUrl != null)
-                URL.revokeObjectURL(state.blobUrl);
-            var contentBlob = new Blob([document.getElementById('import-graph').outerHTML], {type: 'image/svg+xml'});
-            state.blobUrl = URL.createObjectURL(contentBlob);
-            d3.select('#import-download').attr('href', state.blobUrl);
+            var svgLink = document.getElementById('import-download-svg');
+            var pngLink = document.getElementById('import-download-png');
+
+            if (svgLink.href) {
+                URL.revokeObjectURL(svgLink.href);
+                svgLink.removeAttribute('href');
+            }
+
+            if (pngLink.href) {
+                URL.revokeObjectURL(pngLink.href);
+                pngLink.removeAttribute('href');
+            }
+            setTimeout(function () {
+                var contentSvg = document.getElementById('import-graph').outerHTML;
+                var contentBlob = new Blob([contentSvg], {type: 'image/svg+xml'});
+                svgLink.href = URL.createObjectURL(contentBlob);
+                var canvas = document.getElementById('import-canvas');
+                canvg(canvas, contentSvg, {
+                    renderCallback: function () {
+                        canvas.toBlob(function (blob) {
+                            pngLink.href = URL.createObjectURL(blob);
+                        });
+                    }
+                });
+            }, 0);
         }
 
         function isAnonymized(module) {
