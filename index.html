@@ -23,6 +23,10 @@
             padding: 0 12px;
         }
 
+        #import-open-form {
+            display: inline;
+        }
+
         #import-title,
         #import-open-label,
         #import-paste,
@@ -108,7 +112,7 @@
 <body>
 <div id="import-toolbar">
     <h1 id="import-title">Python -X importtime</h1>
-    <input type="file" id="import-open"><label id="import-open-label" for="import-open">Open…</label>
+    <form id="import-open-form"><input type="file" id="import-open"><label id="import-open-label" for="import-open">Open…</label></form>
     <button id="import-paste">Paste</button>
     <a id="import-download-svg" download="importtime.svg">Download SVG</a>
     <a id="import-download-png" download="importtime.png">Download PNG</a>
@@ -135,6 +139,7 @@
                     update();
                 };
                 reader.readAsText(this.files[0]);
+                this.form.reset();
             }
         });
 
