@@ -34,6 +34,6 @@ You can also save the stats to a file and open the file in the web page.
 
     python -X importtime [YOUR_PROGRAM] 2> importtime.txt
 
-Once rendered, you can download the output in svg format.
+Once rendered, you can download the output in SVG or PNG format.
 
 [doc]: https://docs.python.org/3/using/cmdline.html#id5
