@@ -78,6 +78,7 @@
         }
 
         #import-title {
+            cursor: default;
             font-family: monospace;
         }
 
@@ -106,8 +107,9 @@
     <h1 id="import-title">Python -X importtime</h1>
     <input type="file" id="import-open"><label id="import-open-label" for="import-open">Open…</label>
     <button id="import-paste">Paste</button>
-    <a href="#" id="import-download" download="importtime.svg">Download</a>
-    <label id="import-anonymize-label">Anonymize: <input id="import-anonymize" value="corporate,secret_stuff"/></label>
+    <a href="#" id="import-download" download="importtime.svg">Download SVG</a>
+    <label id="import-anonymize-label">Anonymize:
+        <input id="import-anonymize" value="corporate,secret_stuff" autocorrect="off" autocapitalize="off" spellcheck="false"/></label>
 </div>
 <svg id="import-graph" width="3000" height="2000" xmlns="http://www.w3.org/2000/svg">
     <defs></defs>
