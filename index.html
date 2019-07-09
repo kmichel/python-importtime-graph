@@ -23,9 +23,10 @@
         }
 
         #import-title,
+        #import-open-label,
         #import-paste,
-        #import-anonymize-label,
-        #import-download {
+        #import-download,
+        #import-anonymize-label {
             color: #32b1e7;
             margin: 0 6px 0 0;
             text-decoration: none;
@@ -40,6 +41,35 @@
             font-family: inherit;
             box-shadow: inset 0 0 0 1px #5a5a5a, 0 0 0 1px #3e3e3e;
             text-shadow: 0 1px #3e3e3e;
+            cursor: pointer;
+            min-width: 84px;
+            text-align: center;
+            box-sizing: border-box;
+        }
+
+        #import-open-label:focus {
+            color: red;
+        }
+
+        #import-open {
+            position: absolute !important;
+            height: 1px;
+            width: 1px;
+            overflow: hidden;
+            clip: rect(1px, 1px, 1px, 1px);
+        }
+
+        #import-open:focus + label,
+        #import-paste:focus,
+        #import-anonymize:focus,
+        #import-download:focus {
+            outline: none;
+            box-shadow: inset 0 0 6px rgba(50, 177, 231, 0.4), 0 0 6px 1px rgba(50, 177, 231, 0.2), inset 0 0 0 1px #5a5a5a, 0 0 0 1px #3e3e3e;
+        }
+
+        #import-open:focus-within + label {
+            outline: none;
+            box-shadow: inset 0 0 6px rgba(50, 177, 231, 0.4), 0 0 6px 1px rgba(50, 177, 231, 0.2), inset 0 0 0 1px #5a5a5a, 0 0 0 1px #3e3e3e;
         }
 
         #import-anonymize-label,
@@ -74,6 +104,7 @@
 <body>
 <div id="import-toolbar">
     <h1 id="import-title">Python -X importtime</h1>
+    <input type="file" id="import-open"><label id="import-open-label" for="import-open">Open…</label>
     <button id="import-paste">Paste</button>
     <a href="#" id="import-download" download="importtime.svg">Download</a>
     <label id="import-anonymize-label">Anonymize: <input id="import-anonymize" value="corporate,secret_stuff"/></label>
@@ -87,6 +118,17 @@
         var state = {text: '', anonymized_patterns: ['corporate', 'secret_stuff'], blob: null};
 
         update();
+
+        document.getElementById('import-open').addEventListener('change', function () {
+            if (this.files.length > 0) {
+                var reader = new FileReader();
+                reader.onload = function (e) {
+                    state.text = e.target.result;
+                    update();
+                };
+                reader.readAsText(this.files[0]);
+            }
+        });
 
         document.getElementById('import-paste').addEventListener('click', function () {
             navigator.clipboard.readText()

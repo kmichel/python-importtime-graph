@@ -28,7 +28,11 @@ The program will output timing statistics on stderr :
     import time:       102 |        102 |   _locale
     import time:       319 |        420 | _bootlocale
  
-Copy them  then paste them using the button in the web page above.
+Copy these stats and then paste them using the button in the web page above.
+
+You can also save the stats to a file and open the file in the web page.
+
+    python -X importtime [YOUR_PROGRAM] 2> importtime.txt
 
 Once rendered, you can download the output in svg format.
 
