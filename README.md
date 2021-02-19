@@ -3,7 +3,7 @@ Display a treemap of the timings reported by `python -X importtime`
 
 ![A treemap sample](/importtime_demo.png?raw=true)
 
-Try it: https://kmichel-sereema.github.io/python-importtime-graph/
+Try it: https://kmichel.github.io/python-importtime-graph/
 
 ## Usage
 
